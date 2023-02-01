@@ -74,6 +74,21 @@ main {
     animation: pulse 1.5s ease-in-out .5s infinite
 }
 
+.error_title {
+    font-size: 30px;
+    font-weight: bold;
+    text-align: center;
+    padding: 20px;
+}
+
+.error_link {
+    width: 100%;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #9F0013;
+}
+
 @keyframes pulse {
     0% {
         opacity: 1
@@ -84,4 +99,38 @@ main {
     100% {
         opacity: 1
     }
+}
+
+.char__rightbar {
+    position: sticky;
+    top: 25px;
+    padding-bottom: 115px;
+}
+
+.page {
+    position: absolute;
+    left: 15px;
+    right: 15px;
+}
+
+.page-enter {
+    opacity: 0;
+    transform: scale(1.1);
+}
+
+.page-enter-active {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 300ms, transform 300ms;
+}
+
+.page-exit {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.page-exit-active {
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 300ms, transform 300ms;
 }

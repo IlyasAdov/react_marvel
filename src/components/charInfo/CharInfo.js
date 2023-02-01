@@ -1,16 +1,15 @@
 import {useState, useEffect} from 'react';
+import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import ErrorMessage from '../errorMessage/ErrorMessage';
 import Spinner from '../spinner/Spinner';
 import Skeleton from '../skeleton/Skeleton'
-import MarvelService from '../../services/MarvelService';
+import useMarvelService from '../../services/MarvelService';
 import './charInfo.scss';
 
 const CharInfo = (props) => {
     const [char, setChar] = useState(null),
-          [loading, setLoading] = useState(false),
-          [error, setError] = useState(false),
-          marvelService = new MarvelService();
+          {loading, error, getCharacter, clearError} = useMarvelService();
 
     useEffect(() => {
         updateChar();
@@ -25,32 +24,17 @@ const CharInfo = (props) => {
         if (!charId) {
             return;
         }
-
-        onCharLoading();
-        marvelService
-            .getCharacter(charId)
-            .then(onCharLoaded)
-            .catch(onError)
+        clearError();
+        getCharacter(charId).then(onCharLoaded);
     }
 
     const onCharLoaded = (char) => {
         setChar(char);
-        setLoading(false);
     }
-
-    const onCharLoading = () => {
-        setLoading(true);
-    }
-
-    const onError = () => {
-        setLoading(false);
-        setError(true);
-    }
-
     
     const skeleton = char || error || loading ? null : <Skeleton/>,
           errorMessage = error ? <ErrorMessage/> : null,
-          spinner = loading ? <Spinner/> : null,
+          spinner = loading && !error ? <Spinner/> : null,
           content = !(error || loading || !char) ? <View char={char}/> : null;
               
     return (
@@ -96,7 +80,7 @@ const View = ({char}) => {
                         if (i < 10) {
                             return (
                                 <li className="char__comics-item" key={i}>
-                                    <a href={item.resourceURI}>{item.name}</a>
+                                    <Link to={item.resourceURI.match(/comics\/\d*/gm)[0]}>{item.name}</Link>
                                 </li>
                             );
                         }

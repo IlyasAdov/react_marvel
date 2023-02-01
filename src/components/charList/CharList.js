@@ -1,21 +1,20 @@
 import {useState, useEffect, useRef, useCallback} from 'react';
-import PropTypes from 'prop-types'
+import { CSSTransition, TransitionGroup } from 'react-transition-group';
+import PropTypes from 'prop-types';
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
-import MarvelService from '../../services/MarvelService';
+import useMarvelService from '../../services/MarvelService';
 import './charList.scss';
 
 const CharList = (props) => {
     const [charList, setCharList] = useState([]),
-          [loading, setLoading] = useState(true),
-          [error, setError] = useState(false),
-          [newItemLoading, setNewItemLoading] = useState(false),
+          [newItemLoading, setNewItemLoading] = useState(true),
           [offset, setOffset] = useState(210),
           [charEnded, setCharEnded] = useState(false),
-          marvelService = new MarvelService();
+          {loading, error, getAllCharacters} = useMarvelService();
 
     useEffect(() => {
-        onRequest();
+        onRequest(offset, true);
     }, [])
 
     useEffect(() => {
@@ -26,23 +25,16 @@ const CharList = (props) => {
         return () => window.removeEventListener('scroll', onScroll);
     })
 
-    const onRequest = (offset) => { 
-        onCharLoading(); 
-        marvelService
-            .getAllCharacters(offset)
-            .then(onCharListLoaded)
-            .catch(onError)
+    const onRequest = (offset, initial) => { 
+        initial ? setNewItemLoading(false) : setNewItemLoading(true);
+        getAllCharacters(offset).then(onCharListLoaded);
     }
 
     const onScroll = useCallback(() => {
-        if (window.pageYOffset + document.documentElement.clientHeight >= document.documentElement.scrollHeight && !charEnded) {
-            onRequest(offset);
+        if (window.pageYOffset + document.documentElement.clientHeight >= document.documentElement.scrollHeight) {
+            onRequest(offset, false);
         }
     })
-
-    const onCharLoading = () => {
-        setNewItemLoading(true);
-    }
 
     const onCharListLoaded = (newCharList) => { 
         let ended = false; 
@@ -51,21 +43,15 @@ const CharList = (props) => {
         }
 
         setCharList(charList => [...charList, ...newCharList]); 
-        setLoading(false); 
         setNewItemLoading(false); 
         setOffset(offset => offset + newCharList.length); 
         setCharEnded(ended); 
     }
 
-    const onError = () => {
-        setError(true);
-        setLoading(false);
-    }
-
     const itemRefs = useRef([]);
 
     const focusOnItem = (id) => {
-        itemRefs.current.forEach(item => item.classList.remove('char__item_selected'));
+        itemRefs.current.forEach(item => item === null ? null : item.classList.remove('char__item_selected'));
         itemRefs.current[id].classList.add('char__item_selected');
         itemRefs.current[id].focus();
     }
@@ -79,44 +65,49 @@ const CharList = (props) => {
             }
             
             return (
-                <li 
-                className='char__item'
-                tabIndex={0}
-                ref={el => itemRefs.current[i] = el}
-                key={item.id}
-                onClick={() => {
-                    props.onSelectedChar(item.id);
-                    focusOnItem(i);
-                }}
-                onKeyDown={(e) => {
-                    if (e.key === ' ' || e.key === "Enter") {
+                <CSSTransition 
+                key={item.id} 
+                timeout={500}
+                classNames="char__animation">
+                    <li 
+                    className='char__item'
+                    tabIndex={0}
+                    ref={el => itemRefs.current[i] = el}
+                    onClick={() => {
                         props.onSelectedChar(item.id);
                         focusOnItem(i);
-                    }
-                }}>
-                    <img src={item.thumbnail} alt={item.name} style={imgStyle}/>
-                    <div className="char__name">{item.name}</div>
-                </li>
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === ' ' || e.key === "Enter") {
+                            props.onSelectedChar(item.id);
+                            focusOnItem(i);
+                        }
+                    }}>
+                        <img src={item.thumbnail} alt={item.name} style={imgStyle}/>
+                        <div className="char__name">{item.name}</div>
+                    </li>
+                </CSSTransition>
             )
         });
 
         return (
             <ul className="char__grid">
-                {items}
+                <TransitionGroup component={null}>
+                    {items}
+                </TransitionGroup>
             </ul>
         )
     }
 
     const items = renderItems(charList),
           errorMessage = error ? <ErrorMessage/> : null,
-          spinner = loading ? <Spinner/> : null,
-          content = !(loading || error) ? items : null;
+          spinner = loading && !newItemLoading ? <Spinner/> : null;
 
     return (
         <div className="char__list">
             {errorMessage}
             {spinner}
-            {content}
+            {items}
             <button 
                 className="button button__main button__long"
                 disabled={newItemLoading}
